@@ -1,0 +1,27 @@
+version: "3.4"
+services:    
+
+  coqui-tts-webservice-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SSL_DOMAIN_NAME=${SSL_DOMAIN_NAME}
+      - SSL_EMAIL=${SSL_EMAIL}
+    ports:
+      - "446:5002"
+      #- "80:80" # certbot, required if enabling certbot ssl generation but competes with other container for port 80
+    restart: unless-stopped
+    volumes:
+      - ./tts-output:/tmp/tts-output 
+      - ./tts_models:/root/.local/share/tts/
+      # hacked server script to enable SSL
+      - ./server.py:/root/TTS/server/server.py
+      - ./generate_ssl.sh:/root/TTS/server/generate_ssl.sh
+      - ./generate_ssl_certificates.py:/root/TTS/server/generate_ssl_certificates.py
+      - /etc/letsencrypt:/etc/letsencrypt # to traverse symbolic links inside docker, paths MUST match
+    #entrypoint:  /root/TTS/server/generate_ssl.sh
+    #command: python3 TTS/server/server.py --model_name tts_models/en/vctk/vits 
+    entrypoint: python3 TTS/server/server.py --model_name tts_models/en/vctk/vits 
+   

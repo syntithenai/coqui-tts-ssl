@@ -1,0 +1,28 @@
+version: "3.4"
+services:    
+  coqui-tts-webservice-gpu:
+    image: ghcr.io/coqui-ai/tts
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "5002:5002"
+    volumes:
+      - /home/stever/projects/cache/tts-output:/tmp/tts-output
+      - /home/stever/projects/cache/tts_models:/root/.local/share/tts/
+      - /home/stever/projects/cache/cache/letsencrypt:/etc/letsencrypt/
+      # hacked server script to enable SSL
+      - ./server.py:/root/TTS/server/server.py
+      - ./generate_ssl.sh:/root/TTS/server/generate_ssl.sh
+      - ./generate_ssl_certificates.py:/root/TTS/server/generate_ssl_certificates.py
+      - /home/stever/projects/cache/letsencrypt/archive/${SSL_DOMAIN_NAME}/privkey1.pem:/root/key.pem
+      - /home/stever/projects/cache/letsencrypt/archive/${SSL_DOMAIN_NAME}/cert1.pem:/root/cert.pem
+    entrypoint:  /root/TTS/server/generate_ssl.sh
+    command: python3 TTS/server/server.py --model_name tts_models/en/vctk/vits --use_cuda true
